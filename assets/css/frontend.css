@@ -1,0 +1,279 @@
+.verwaltung-boote-liste,
+.verwaltung-boote-tabellen-scroll {
+	overflow: visible;
+	width: 100%;
+}
+
+.verwaltung-boote-liste table,
+.verwaltung-boote-historie table,
+.verwaltung-boote-reservierungen table,
+.verwaltung-boote-bootswart table {
+	border-collapse: collapse;
+	font-size: 0.82rem;
+	line-height: 1.35;
+	table-layout: fixed;
+	width: 100%;
+}
+
+.verwaltung-boote-liste table {
+	table-layout: fixed;
+}
+
+.verwaltung-boote-historie table {
+	font-size: 0.68rem;
+}
+
+.verwaltung-boote-reservierungen table {
+	font-size: 0.74rem;
+}
+
+.verwaltung-boote-bootswart table {
+	font-size: 0.68rem;
+}
+
+.verwaltung-boote-liste th,
+.verwaltung-boote-liste td,
+.verwaltung-boote-historie th,
+.verwaltung-boote-historie td,
+.verwaltung-boote-reservierungen th,
+.verwaltung-boote-reservierungen td,
+.verwaltung-boote-bootswart th,
+.verwaltung-boote-bootswart td {
+	border-bottom: 1px solid currentColor;
+	overflow-wrap: anywhere;
+	padding: 0.45rem;
+	text-align: left;
+	vertical-align: top;
+}
+
+.verwaltung-boote-liste thead th {
+	font-weight: 700;
+}
+
+.verwaltung-boote-gruppe th {
+	font-weight: 700;
+	padding-block-start: 0.8rem;
+	text-align: left;
+}
+
+.verwaltung-boote-rueckgabe {
+	display: grid;
+	font-size: 0.78rem;
+	gap: 0.5rem;
+	margin-block-start: 0.5rem;
+}
+
+.verwaltung-boote-reservieren {
+	display: grid;
+	font-size: 0.78rem;
+	gap: 0.5rem;
+	margin-block-start: 0.5rem;
+}
+
+.verwaltung-boote-reservieren-bereich {
+	margin-block-start: 0.65rem;
+}
+
+.verwaltung-boote-reservieren-bereich summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.verwaltung-boote-heute-reserviert {
+	font-size: 0.78rem;
+	margin-block-start: 0.65rem;
+}
+
+.verwaltung-boote-heute-reserviert ul {
+	margin: 0.25rem 0 0;
+	padding-inline-start: 1.2rem;
+}
+
+.verwaltung-boote-reservieren label {
+	display: grid;
+	gap: 0.35rem;
+}
+
+.verwaltung-boote-rueckgabe-bereich {
+	margin-block-start: 0.5rem;
+}
+
+.verwaltung-boote-rueckgabe-bereich summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.verwaltung-boote-rueckgabe input[readonly] {
+	background: color-mix(in srgb, currentColor 8%, transparent);
+	cursor: not-allowed;
+}
+
+.verwaltung-boote-rueckgabe input,
+.verwaltung-boote-rueckgabe select,
+.verwaltung-boote-rueckgabe textarea,
+.verwaltung-boote-rueckgabe button,
+.verwaltung-boote-liste button,
+.verwaltung-boote-reservierungen button,
+.verwaltung-boote-bootswart button,
+.verwaltung-boote-reservieren input,
+.verwaltung-boote-reservieren button {
+	box-sizing: border-box;
+	font: inherit;
+	max-width: 100%;
+	padding: 0.35rem 0.5rem;
+	width: 100%;
+}
+
+.verwaltung-boote-rueckgabe label,
+.verwaltung-boote-schadendetails {
+	display: grid;
+	gap: 0.35rem;
+}
+
+.verwaltung-boote-schadendetails {
+	gap: 0.75rem;
+}
+
+.verwaltung-boote-schadendetails[hidden] {
+	display: none;
+}
+
+.verwaltung-boote-aktuell {
+	border: 1px solid currentColor;
+	font-size: 0.9rem;
+	margin-block-end: 1.5rem;
+	padding: 0.75rem;
+}
+
+.verwaltung-boote-aktuell h2,
+.verwaltung-boote-historie h2,
+.verwaltung-boote-reservierungen h2,
+.verwaltung-boote-listen-ueberschrift,
+.verwaltung-boote-bootswart h2 {
+	font-size: clamp(1.15rem, 2vw, 1.4rem);
+	line-height: 1.25;
+	margin-block-start: 0;
+}
+
+.verwaltung-boote-historie {
+	margin-block-end: 2rem;
+}
+
+.verwaltung-boote-meldung {
+	border-inline-start: 0.3rem solid currentColor;
+	font-weight: 600;
+	padding: 0.75rem 1rem;
+}
+
+.verwaltung-boote-bootswart-navigation ul {
+	display: grid;
+	gap: 0.75rem;
+	list-style: none;
+	margin: 1.5rem 0;
+	padding: 0;
+}
+
+.verwaltung-boote-bootswart-navigation a {
+	border: 1px solid currentColor;
+	display: block;
+	font-weight: 700;
+	padding: 0.85rem 1rem;
+}
+
+.verwaltung-boote-qr-einstieg {
+	border: 1px solid currentColor;
+	max-width: 40rem;
+	padding: 1rem;
+}
+
+.verwaltung-boote-qr-einstieg dl {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.verwaltung-boote-qr-einstieg dl div {
+	display: grid;
+	grid-template-columns: minmax(8rem, auto) 1fr;
+	gap: 0.5rem;
+}
+
+.verwaltung-boote-qr-einstieg dt {
+	font-weight: 700;
+}
+
+.verwaltung-boote-qr-einstieg dd {
+	margin: 0;
+}
+
+.verwaltung-boote-qr-aktionen {
+	margin-block-start: 1rem;
+}
+
+.verwaltung-boote-qr-liste {
+	display: grid;
+	gap: 1.5rem;
+	grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+	margin-block-start: 1.5rem;
+}
+
+.verwaltung-boote-qr-karte {
+	border: 1px solid currentColor;
+	break-inside: avoid;
+	padding: 1rem;
+}
+
+.verwaltung-boote-qr-karte h3 {
+	margin-block-start: 0;
+}
+
+.verwaltung-boote-qr-code {
+	background: #fff;
+	max-width: 220px;
+	padding: 0.5rem;
+}
+
+.verwaltung-boote-qr-code img,
+.verwaltung-boote-qr-code canvas {
+	display: block;
+	height: auto;
+	max-width: 100%;
+}
+
+.verwaltung-boote-qr-url {
+	font-size: 0.72rem;
+	overflow-wrap: anywhere;
+}
+
+@media print {
+	.verwaltung-boote-qr-navigation,
+	.verwaltung-boote-qr-drucken,
+	.site-header,
+	.site-footer {
+		display: none !important;
+	}
+
+	.verwaltung-boote-qr-liste {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 600px) {
+	.verwaltung-boote-liste table,
+	.verwaltung-boote-historie table,
+	.verwaltung-boote-reservierungen table,
+	.verwaltung-boote-bootswart table {
+		font-size: 0.62rem;
+		table-layout: fixed;
+	}
+
+	.verwaltung-boote-liste th,
+	.verwaltung-boote-liste td,
+	.verwaltung-boote-historie th,
+	.verwaltung-boote-historie td,
+	.verwaltung-boote-reservierungen th,
+	.verwaltung-boote-reservierungen td,
+	.verwaltung-boote-bootswart th,
+	.verwaltung-boote-bootswart td {
+		padding: 0.2rem;
+	}
+}
