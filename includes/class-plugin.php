@@ -543,7 +543,7 @@ final class Plugin {
 		$start_input = isset( $_POST['reservierung_start'] ) ? sanitize_text_field( wp_unslash( $_POST['reservierung_start'] ) ) : '';
 		$end_input   = isset( $_POST['reservierung_ende'] ) ? sanitize_text_field( wp_unslash( $_POST['reservierung_ende'] ) ) : '';
 		$reason      = isset( $_POST['reservierung_grund'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reservierung_grund'] ) ) : '';
-		$reason      = wp_html_excerpt( $reason, 1000, '' );
+		$reason      = wp_html_excerpt( $reason, 100, '' );
 		$start       = $this->parse_local_datetime( $start_input );
 		$end         = $this->parse_local_datetime( $end_input );
 
@@ -2239,7 +2239,7 @@ final class Plugin {
 		$user     = get_userdata( $user_id );
 		$start    = (string) get_post_meta( $reservation_id, '_vb_reservierung_start', true );
 		$end      = (string) get_post_meta( $reservation_id, '_vb_reservierung_ende', true );
-		$reason   = (string) get_post_meta( $reservation_id, '_vb_reservierung_grund', true );
+		$reason   = wp_html_excerpt( (string) get_post_meta( $reservation_id, '_vb_reservierung_grund', true ), 100, '' );
 		$log_id   = (int) get_post_meta( $reservation_id, '_vb_started_log_id', true );
 		$cancelled_utc = (string) get_post_meta( $reservation_id, '_vb_storniert_am', true );
 		$completed_utc = (string) get_post_meta( $reservation_id, '_vb_nutzung_beendet_am', true );
@@ -2618,7 +2618,7 @@ final class Plugin {
 				</label>
 				<label>
 					<?php esc_html_e( 'Grund für die Reservierung (optional)', 'verwaltung-boote' ); ?>
-					<textarea name="reservierung_grund" rows="3" maxlength="1000"></textarea>
+					<textarea name="reservierung_grund" rows="3" maxlength="100"></textarea>
 				</label>
 				<button type="submit"><?php esc_html_e( 'Reservierung speichern', 'verwaltung-boote' ); ?></button>
 			</form>

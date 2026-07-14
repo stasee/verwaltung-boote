@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Verwaltung Boote
  * Description:       Verwaltung von Motor- und Segelbooten fuer einen Segelverein.
- * Version:           1.7.0
+ * Version:           1.7.1
  * Requires at least: 6.9
  * Requires PHP:      7.2.24
  * Author:            Website-Administration
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'VERWALTUNG_BOOTE_VERSION', '1.7.0' );
+define( 'VERWALTUNG_BOOTE_VERSION', '1.7.1' );
 define( 'VERWALTUNG_BOOTE_FILE', __FILE__ );
 define( 'VERWALTUNG_BOOTE_PATH', plugin_dir_path( __FILE__ ) );
 

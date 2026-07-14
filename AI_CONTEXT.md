@@ -74,9 +74,9 @@ Die Seiten werden durch `ensure_bootswart_pages()` erstellt bzw. bei Updates erg
 
 ## Aktueller Stand
 
-Plugin-Version: **1.7.0**
+Plugin-Version: **1.7.1**
 
-Reservierungen können einen optionalen Freitextgrund im Metafeld `_vb_reservierung_grund` enthalten. Der Text ist auf 1.000 Zeichen begrenzt und wird in allen Reservierungsansichten sowie im Bezug einer Mitgliedsnachricht angezeigt.
+Reservierungen können einen optionalen Freitextgrund im Metafeld `_vb_reservierung_grund` enthalten. Der Text ist auf 100 Zeichen begrenzt und wird in allen Reservierungsansichten sowie im Bezug einer Mitgliedsnachricht angezeigt.
 
 Namen reservierender Mitglieder werden überall dort als Link auf `/mitglied-nachricht-schreiben/` ausgegeben, wo eine Reservierung dargestellt wird und das Mitglied eine gültige E-Mail-Adresse hinterlegt hat. Das Formular ermittelt den Empfänger ausschließlich aus der Reservierungs-ID, zeigt die E-Mail-Adresse nicht an und versendet die Nachricht Nonce-geschützt über `wp_mail()`.
 
