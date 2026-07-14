@@ -2,7 +2,7 @@
 Contributors: website-administration
 Requires at least: 6.9
 Requires PHP: 7.2.24
-Stable tag: 1.5.5
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,6 +15,14 @@ Bootsdaten pflegen. Angemeldete Vereinsmitglieder sehen die Liste ueber den
 Shortcode [verwaltung_boote_liste].
 
 == Changelog ==
+
+= 1.7.0 =
+* Optionalen Freitextgrund beim Reservieren ergänzt.
+* Reservierungsgrund in allen Reservierungsansichten und im Nachrichtenbezug sichtbar gemacht.
+
+= 1.6.0 =
+* Reservierende Mitglieder mit hinterlegter E-Mail-Adresse können über ihre verlinkten Namen kontaktiert werden.
+* Geschützte Nachrichtenseite ergänzt; die Empfängeradresse bleibt verborgen.
 
 = 1.5.5 =
 * Freitextfilter auf den Bootswart-Seiten „Alle Reservierungen“ und „Alle Bootsschäden“ ergänzt.

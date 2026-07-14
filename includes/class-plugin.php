@@ -51,8 +51,10 @@ final class Plugin {
 		add_shortcode( 'verwaltung_boote_bootswart_nutzer', array( $this, 'render_bootswart_users' ) );
 		add_shortcode( 'verwaltung_boote_bootswart_qr', array( $this, 'render_bootswart_qr_codes' ) );
 		add_shortcode( 'verwaltung_boote_boot_einstieg', array( $this, 'render_boat_qr_entry' ) );
+		add_shortcode( 'verwaltung_boote_nachricht', array( $this, 'render_reservation_message_page' ) );
 		add_action( 'init', array( $this, 'ensure_bootswart_pages' ), 30 );
 		add_action( 'init', array( $this, 'ensure_qr_entry_page' ), 31 );
+		add_action( 'init', array( $this, 'ensure_message_page' ), 32 );
 		add_action( 'template_redirect', array( $this, 'protect_bootswart_page' ) );
 		add_filter( 'wp_get_nav_menu_items', array( $this, 'filter_bootswart_menu_item' ) );
 		add_action( 'pre_get_posts', array( $this, 'hide_bootswart_page' ) );
@@ -71,6 +73,7 @@ final class Plugin {
 		add_action( 'admin_post_verwaltung_boote_admin_nutzung_beenden', array( $this, 'admin_end_usage' ) );
 		add_action( 'admin_post_verwaltung_boote_schaden_beheben', array( $this, 'resolve_damage' ) );
 		add_action( 'admin_post_verwaltung_boote_admin_reservierung_loeschen', array( $this, 'admin_delete_reservation' ) );
+		add_action( 'admin_post_verwaltung_boote_nachricht_senden', array( $this, 'send_reservation_message' ) );
 		add_filter( 'post_row_actions', array( $this, 'admin_row_actions' ), 10, 2 );
 		add_filter( 'bulk_actions-edit-vb_reservierung', array( $this, 'remove_reservation_delete_actions' ) );
 		add_action( 'admin_notices', array( $this, 'render_admin_notice' ) );
@@ -441,6 +444,11 @@ final class Plugin {
 	 * @return void
 	 */
 	public function protect_bootswart_page() {
+		$message_page_id = absint( get_option( 'verwaltung_boote_message_page_id' ) );
+		if ( $message_page_id && is_page( $message_page_id ) && ! is_user_logged_in() ) {
+			auth_redirect();
+		}
+
 		$page_ids = $this->get_bootswart_page_ids();
 		if ( empty( $page_ids ) || ! is_page( $page_ids ) ) {
 			return;
@@ -466,11 +474,16 @@ final class Plugin {
 	 * @return array<int,object>
 	 */
 	public function filter_bootswart_menu_item( $items ) {
-		if ( $this->is_bootswart() ) {
-			return $items;
+		$page_ids        = array();
+		$message_page_id = absint( get_option( 'verwaltung_boote_message_page_id' ) );
+		if ( $message_page_id ) {
+			$page_ids[] = $message_page_id;
 		}
 
-		$page_ids = $this->get_bootswart_page_ids();
+		if ( ! $this->is_bootswart() ) {
+			$page_ids = array_merge( $page_ids, $this->get_bootswart_page_ids() );
+		}
+
 		return array_values(
 			array_filter(
 				$items,
@@ -488,11 +501,18 @@ final class Plugin {
 	 * @return void
 	 */
 	public function hide_bootswart_page( $query ) {
-		if ( is_admin() || ! $query->is_main_query() || $this->is_bootswart() || $query->is_singular() ) {
+		if ( is_admin() || ! $query->is_main_query() || $query->is_singular() ) {
 			return;
 		}
 
-		$page_ids = $this->get_bootswart_page_ids();
+		$page_ids        = array();
+		$message_page_id = absint( get_option( 'verwaltung_boote_message_page_id' ) );
+		if ( $message_page_id ) {
+			$page_ids[] = $message_page_id;
+		}
+		if ( ! $this->is_bootswart() ) {
+			$page_ids = array_merge( $page_ids, $this->get_bootswart_page_ids() );
+		}
 		if ( empty( $page_ids ) ) {
 			return;
 		}
@@ -522,6 +542,8 @@ final class Plugin {
 
 		$start_input = isset( $_POST['reservierung_start'] ) ? sanitize_text_field( wp_unslash( $_POST['reservierung_start'] ) ) : '';
 		$end_input   = isset( $_POST['reservierung_ende'] ) ? sanitize_text_field( wp_unslash( $_POST['reservierung_ende'] ) ) : '';
+		$reason      = isset( $_POST['reservierung_grund'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reservierung_grund'] ) ) : '';
+		$reason      = wp_html_excerpt( $reason, 1000, '' );
 		$start       = $this->parse_local_datetime( $start_input );
 		$end         = $this->parse_local_datetime( $end_input );
 
@@ -563,6 +585,7 @@ final class Plugin {
 		update_post_meta( $reservation_id, '_vb_user_id', $user->ID );
 		update_post_meta( $reservation_id, '_vb_reservierung_start', $start_utc );
 		update_post_meta( $reservation_id, '_vb_reservierung_ende', $end_utc );
+		update_post_meta( $reservation_id, '_vb_reservierung_grund', $reason );
 
 		$this->redirect_with_message( 'reserviert' );
 	}
@@ -1307,6 +1330,7 @@ final class Plugin {
 			'title'      => __( 'Reservierung', 'verwaltung-boote' ),
 			'vb_boot'    => __( 'Boot', 'verwaltung-boote' ),
 			'vb_mitglied' => __( 'Mitglied', 'verwaltung-boote' ),
+			'vb_grund'   => __( 'Grund', 'verwaltung-boote' ),
 			'vb_start'   => __( 'Start', 'verwaltung-boote' ),
 			'vb_ende'    => __( 'Ende', 'verwaltung-boote' ),
 			'vb_status'  => __( 'Status', 'verwaltung-boote' ),
@@ -1328,7 +1352,10 @@ final class Plugin {
 				echo esc_html( $data['boat'] );
 				break;
 			case 'vb_mitglied':
-				echo esc_html( $data['user'] );
+				$this->render_reservation_user_link( $reservation_id, $data['user'] );
+				break;
+			case 'vb_grund':
+				echo nl2br( esc_html( $data['reason'] ) );
 				break;
 			case 'vb_start':
 				$this->render_browser_datetime( $data['start_utc'] );
@@ -1655,10 +1682,12 @@ final class Plugin {
 				<?php $active_user = get_userdata( (int) get_post_meta( $active_log->ID, '_vb_user_id', true ) ); ?>
 				<p><?php echo esc_html( sprintf( __( 'Derzeit in Nutzung von %s.', 'verwaltung-boote' ), $active_user ? $active_user->display_name : __( 'unbekanntem Mitglied', 'verwaltung-boote' ) ) ); ?></p>
 			<?php elseif ( $blocking_reservation && (int) get_post_meta( $blocking_reservation->ID, '_vb_user_id', true ) === $current_user && $this->is_reservation_start_allowed( $blocking_reservation->ID ) ) : ?>
+				<?php $reservation_data = $this->get_reservation_data( $blocking_reservation->ID ); ?>
+				<p><?php esc_html_e( 'Grund: ', 'verwaltung-boote' ); ?><?php echo nl2br( esc_html( $reservation_data['reason'] ) ); ?></p>
 				<?php $this->render_reservation_start_form( $blocking_reservation->ID ); ?>
 			<?php elseif ( $blocking_reservation ) : ?>
 				<?php $reservation_data = $this->get_reservation_data( $blocking_reservation->ID ); ?>
-				<p><?php echo esc_html( sprintf( __( 'Reserviert von %s bis ', 'verwaltung-boote' ), $reservation_data['user'] ) ); ?><?php $this->render_browser_datetime( $reservation_data['end_utc'] ); ?></p>
+				<p><?php esc_html_e( 'Reserviert von ', 'verwaltung-boote' ); ?><?php $this->render_reservation_user_link( $blocking_reservation->ID, $reservation_data['user'] ); ?><?php esc_html_e( ' bis ', 'verwaltung-boote' ); ?><?php $this->render_browser_datetime( $reservation_data['end_utc'] ); ?><br><?php esc_html_e( 'Grund: ', 'verwaltung-boote' ); ?><?php echo nl2br( esc_html( $reservation_data['reason'] ) ); ?></p>
 			<?php else : ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="verwaltung_boote_start">
@@ -1713,7 +1742,7 @@ final class Plugin {
 			<section>
 				<h2><?php esc_html_e( 'Alle Reservierungen', 'verwaltung-boote' ); ?></h2>
 				<p class="verwaltung-boote-freitext-filter"><label for="verwaltung-boote-reservierungen-filter"><?php esc_html_e( 'Reservierungen filtern', 'verwaltung-boote' ); ?></label><input id="verwaltung-boote-reservierungen-filter" class="verwaltung-boote-freitext-filter-eingabe" type="search" placeholder="<?php echo esc_attr__( 'Freitext suchen …', 'verwaltung-boote' ); ?>" autocomplete="off"></p>
-				<div class="verwaltung-boote-tabellen-scroll"><table><thead><tr><th><?php esc_html_e( 'Boot', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Mitglied', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Start', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Ende', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Status', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Aktion', 'verwaltung-boote' ); ?></th></tr></thead><tbody class="verwaltung-boote-freitext-filter-tabelle"><?php foreach ( $reservations as $reservation ) : $data = $this->get_reservation_data( $reservation->ID ); ?><tr class="verwaltung-boote-freitext-filter-zeile"><td><?php echo esc_html( $data['boat'] ); ?></td><td><?php echo esc_html( $data['user'] ); ?></td><td><?php $this->render_browser_datetime( $data['start_utc'] ); ?></td><td><?php $this->render_browser_datetime( $data['end_utc'] ); ?></td><td><?php echo esc_html( $data['status'] ); ?></td><td><?php if ( ! $data['log_id'] && ! $data['cancelled_utc'] && strtotime( $data['end_utc'] . ' UTC' ) >= time() ) : ?><form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="verwaltung_boote_admin_reservierung_loeschen"><input type="hidden" name="reservierung_id" value="<?php echo esc_attr( $reservation->ID ); ?>"><input type="hidden" name="frontend" value="1"><?php wp_nonce_field( 'verwaltung_boote_admin_reservierung_loeschen_' . $reservation->ID ); ?><button type="submit"><?php esc_html_e( 'Stornieren', 'verwaltung-boote' ); ?></button></form><?php else : ?>–<?php endif; ?></td></tr><?php endforeach; if ( empty( $reservations ) ) : ?><tr><td colspan="6"><?php esc_html_e( 'Keine Reservierungen vorhanden.', 'verwaltung-boote' ); ?></td></tr><?php endif; ?><tr class="verwaltung-boote-freitext-filter-kein-treffer" hidden><td colspan="6"><?php esc_html_e( 'Keine passenden Reservierungen gefunden.', 'verwaltung-boote' ); ?></td></tr></tbody></table></div>
+				<div class="verwaltung-boote-tabellen-scroll"><table><thead><tr><th><?php esc_html_e( 'Boot', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Mitglied', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Grund', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Start', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Ende', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Status', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Aktion', 'verwaltung-boote' ); ?></th></tr></thead><tbody class="verwaltung-boote-freitext-filter-tabelle"><?php foreach ( $reservations as $reservation ) : $data = $this->get_reservation_data( $reservation->ID ); ?><tr class="verwaltung-boote-freitext-filter-zeile"><td><?php echo esc_html( $data['boat'] ); ?></td><td><?php $this->render_reservation_user_link( $reservation->ID, $data['user'] ); ?></td><td><?php echo nl2br( esc_html( $data['reason'] ) ); ?></td><td><?php $this->render_browser_datetime( $data['start_utc'] ); ?></td><td><?php $this->render_browser_datetime( $data['end_utc'] ); ?></td><td><?php echo esc_html( $data['status'] ); ?></td><td><?php if ( ! $data['log_id'] && ! $data['cancelled_utc'] && strtotime( $data['end_utc'] . ' UTC' ) >= time() ) : ?><form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="verwaltung_boote_admin_reservierung_loeschen"><input type="hidden" name="reservierung_id" value="<?php echo esc_attr( $reservation->ID ); ?>"><input type="hidden" name="frontend" value="1"><?php wp_nonce_field( 'verwaltung_boote_admin_reservierung_loeschen_' . $reservation->ID ); ?><button type="submit"><?php esc_html_e( 'Stornieren', 'verwaltung-boote' ); ?></button></form><?php else : ?>–<?php endif; ?></td></tr><?php endforeach; if ( empty( $reservations ) ) : ?><tr><td colspan="7"><?php esc_html_e( 'Keine Reservierungen vorhanden.', 'verwaltung-boote' ); ?></td></tr><?php endif; ?><tr class="verwaltung-boote-freitext-filter-kein-treffer" hidden><td colspan="7"><?php esc_html_e( 'Keine passenden Reservierungen gefunden.', 'verwaltung-boote' ); ?></td></tr></tbody></table></div>
 			</section>
 			<?php
 			return;
@@ -1814,14 +1843,14 @@ final class Plugin {
 			<section>
 				<h2><?php esc_html_e( 'Alle Reservierungen', 'verwaltung-boote' ); ?></h2>
 				<div class="verwaltung-boote-tabellen-scroll"><table><thead><tr>
-					<th><?php esc_html_e( 'Boot', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Mitglied', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Start', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Ende', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Status', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Aktion', 'verwaltung-boote' ); ?></th>
+					<th><?php esc_html_e( 'Boot', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Mitglied', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Grund', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Start', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Ende', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Status', 'verwaltung-boote' ); ?></th><th><?php esc_html_e( 'Aktion', 'verwaltung-boote' ); ?></th>
 				</tr></thead><tbody>
 				<?php foreach ( $reservations as $reservation ) : $data = $this->get_reservation_data( $reservation->ID ); ?>
-					<tr><td><?php echo esc_html( $data['boat'] ); ?></td><td><?php echo esc_html( $data['user'] ); ?></td><td><?php $this->render_browser_datetime( $data['start_utc'] ); ?></td><td><?php $this->render_browser_datetime( $data['end_utc'] ); ?></td><td><?php echo esc_html( $data['status'] ); ?></td><td>
+					<tr><td><?php echo esc_html( $data['boat'] ); ?></td><td><?php $this->render_reservation_user_link( $reservation->ID, $data['user'] ); ?></td><td><?php echo nl2br( esc_html( $data['reason'] ) ); ?></td><td><?php $this->render_browser_datetime( $data['start_utc'] ); ?></td><td><?php $this->render_browser_datetime( $data['end_utc'] ); ?></td><td><?php echo esc_html( $data['status'] ); ?></td><td>
 						<?php if ( ! $data['log_id'] && ! $data['cancelled_utc'] && strtotime( $data['end_utc'] . ' UTC' ) >= time() ) : ?><form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="verwaltung_boote_admin_reservierung_loeschen"><input type="hidden" name="reservierung_id" value="<?php echo esc_attr( $reservation->ID ); ?>"><input type="hidden" name="frontend" value="1"><?php wp_nonce_field( 'verwaltung_boote_admin_reservierung_loeschen_' . $reservation->ID ); ?><button type="submit"><?php esc_html_e( 'Stornieren', 'verwaltung-boote' ); ?></button></form><?php else : ?>–<?php endif; ?>
 					</td></tr>
 				<?php endforeach; ?>
-				<?php if ( empty( $reservations ) ) : ?><tr><td colspan="6"><?php esc_html_e( 'Keine Reservierungen vorhanden.', 'verwaltung-boote' ); ?></td></tr><?php endif; ?>
+				<?php if ( empty( $reservations ) ) : ?><tr><td colspan="7"><?php esc_html_e( 'Keine Reservierungen vorhanden.', 'verwaltung-boote' ); ?></td></tr><?php endif; ?>
 				</tbody></table></div>
 			</section>
 
@@ -1983,10 +2012,12 @@ final class Plugin {
 							);
 							?>
 						<?php elseif ( (int) get_post_meta( $blocking_reservation->ID, '_vb_user_id', true ) === $current_user && $this->is_reservation_start_allowed( $blocking_reservation->ID ) ) : ?>
+							<?php $reservation_data = $this->get_reservation_data( $blocking_reservation->ID ); ?>
+							<p><?php esc_html_e( 'Grund: ', 'verwaltung-boote' ); ?><?php echo nl2br( esc_html( $reservation_data['reason'] ) ); ?></p>
 							<?php $this->render_reservation_start_form( $blocking_reservation->ID ); ?>
 						<?php else : ?>
 							<?php $reservation_data = $this->get_reservation_data( $blocking_reservation->ID ); ?>
-							<?php echo esc_html( sprintf( __( 'Reserviert von %s bis ', 'verwaltung-boote' ), $reservation_data['user'] ) ); ?><?php $this->render_browser_datetime( $reservation_data['end_utc'] ); ?>
+							<?php esc_html_e( 'Reserviert von ', 'verwaltung-boote' ); ?><?php $this->render_reservation_user_link( $blocking_reservation->ID, $reservation_data['user'] ); ?><?php esc_html_e( ' bis ', 'verwaltung-boote' ); ?><?php $this->render_browser_datetime( $reservation_data['end_utc'] ); ?><br><?php esc_html_e( 'Grund: ', 'verwaltung-boote' ); ?><?php echo nl2br( esc_html( $reservation_data['reason'] ) ); ?>
 						<?php endif; ?>
 						<?php $this->render_today_reservations( $today_reservations, $blocking_reservation ? $blocking_reservation->ID : 0 ); ?>
 						<?php $this->render_reservation_form( get_the_ID() ); ?>
@@ -2208,6 +2239,7 @@ final class Plugin {
 		$user     = get_userdata( $user_id );
 		$start    = (string) get_post_meta( $reservation_id, '_vb_reservierung_start', true );
 		$end      = (string) get_post_meta( $reservation_id, '_vb_reservierung_ende', true );
+		$reason   = (string) get_post_meta( $reservation_id, '_vb_reservierung_grund', true );
 		$log_id   = (int) get_post_meta( $reservation_id, '_vb_started_log_id', true );
 		$cancelled_utc = (string) get_post_meta( $reservation_id, '_vb_storniert_am', true );
 		$completed_utc = (string) get_post_meta( $reservation_id, '_vb_nutzung_beendet_am', true );
@@ -2235,6 +2267,7 @@ final class Plugin {
 			'end'       => $this->format_logbook_time( $end, '–' ),
 			'start_utc' => $start,
 			'end_utc'   => $end,
+			'reason'    => '' !== $reason ? $reason : '–',
 			'log_id'    => $log_id,
 			'status'    => $status,
 			'cancelled_utc' => $cancelled_utc,
@@ -2242,6 +2275,161 @@ final class Plugin {
 			'completed_utc' => $completed_utc,
 			'can_start' => $this->is_reservation_start_allowed( $reservation_id ),
 		);
+	}
+
+	/**
+	 * Liefert das kontaktierbare Mitglied einer Reservierung.
+	 *
+	 * @param int $reservation_id Reservierungs-ID.
+	 * @return \WP_User|false
+	 */
+	private function get_reservation_recipient( $reservation_id ) {
+		$reservation = get_post( absint( $reservation_id ) );
+		if ( ! $reservation || 'vb_reservierung' !== $reservation->post_type || 'publish' !== $reservation->post_status ) {
+			return false;
+		}
+
+		$user = get_userdata( (int) get_post_meta( $reservation->ID, '_vb_user_id', true ) );
+		if ( ! $user || ! is_email( $user->user_email ) ) {
+			return false;
+		}
+
+		return $user;
+	}
+
+	/**
+	 * Erstellt den Link zum Nachrichtenformular einer Reservierung.
+	 *
+	 * @param int $reservation_id Reservierungs-ID.
+	 * @return string
+	 */
+	private function get_reservation_message_url( $reservation_id ) {
+		$page_id = absint( get_option( 'verwaltung_boote_message_page_id' ) );
+		if ( ! $page_id || ! get_post_status( $page_id ) ) {
+			$page = get_page_by_path( 'mitglied-nachricht-schreiben' );
+			$page_id = $page ? (int) $page->ID : 0;
+		}
+
+		if ( ! $page_id || ! $this->get_reservation_recipient( $reservation_id ) ) {
+			return '';
+		}
+
+		return add_query_arg( 'reservierung', absint( $reservation_id ), get_permalink( $page_id ) );
+	}
+
+	/**
+	 * Gibt einen Reservierenden bei vorhandener E-Mail-Adresse als Kontaktlink aus.
+	 *
+	 * @param int    $reservation_id Reservierungs-ID.
+	 * @param string $label          Sichtbarer Name.
+	 * @return void
+	 */
+	private function render_reservation_user_link( $reservation_id, $label ) {
+		$url = $this->get_reservation_message_url( $reservation_id );
+		if ( ! $url ) {
+			echo esc_html( $label );
+			return;
+		}
+
+		printf(
+			'<a class="verwaltung-boote-mitglied-kontakt" href="%1$s" title="%2$s">%3$s</a>',
+			esc_url( $url ),
+			esc_attr( sprintf( __( 'Nachricht an %s schreiben', 'verwaltung-boote' ), $label ) ),
+			esc_html( $label )
+		);
+	}
+
+	/**
+	 * Zeigt das Nachrichtenformular für das Mitglied einer Reservierung.
+	 *
+	 * @return string
+	 */
+	public function render_reservation_message_page() {
+		if ( ! is_user_logged_in() ) {
+			return '<p>' . esc_html__( 'Bitte melde dich an, um einem Mitglied eine Nachricht zu schreiben.', 'verwaltung-boote' ) . '</p>';
+		}
+
+		$reservation_id = isset( $_GET['reservierung'] ) ? absint( wp_unslash( $_GET['reservierung'] ) ) : 0;
+		$recipient      = $this->get_reservation_recipient( $reservation_id );
+		if ( ! $recipient ) {
+			return '<p class="verwaltung-boote-hinweis">' . esc_html__( 'Für diese Reservierung kann keine Nachricht gesendet werden.', 'verwaltung-boote' ) . '</p>';
+		}
+
+		$data   = $this->get_reservation_data( $reservation_id );
+		$status = isset( $_GET['vb_nachricht'] ) ? sanitize_key( wp_unslash( $_GET['vb_nachricht'] ) ) : '';
+		wp_enqueue_style( 'verwaltung-boote-frontend', plugins_url( 'assets/css/frontend.css', VERWALTUNG_BOOTE_FILE ), array(), VERWALTUNG_BOOTE_VERSION );
+
+		ob_start();
+		?>
+		<section class="verwaltung-boote-nachricht">
+			<h2><?php echo esc_html( sprintf( __( 'Nachricht an %s', 'verwaltung-boote' ), $recipient->display_name ) ); ?></h2>
+			<?php if ( 'gesendet' === $status ) : ?>
+				<p class="verwaltung-boote-meldung" role="status"><?php esc_html_e( 'Die Nachricht wurde gesendet.', 'verwaltung-boote' ); ?></p>
+			<?php elseif ( 'fehler' === $status ) : ?>
+				<p class="verwaltung-boote-meldung verwaltung-boote-meldung-fehler" role="alert"><?php esc_html_e( 'Die Nachricht konnte nicht gesendet werden. Bitte versuche es erneut.', 'verwaltung-boote' ); ?></p>
+			<?php endif; ?>
+			<p><?php echo esc_html( sprintf( __( 'Bezug: Reservierung von %1$s (%2$s bis %3$s)', 'verwaltung-boote' ), $data['boat'], $data['start'], $data['end'] ) ); ?></p>
+			<p><strong><?php esc_html_e( 'Grund:', 'verwaltung-boote' ); ?></strong><br><?php echo nl2br( esc_html( $data['reason'] ) ); ?></p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="verwaltung_boote_nachricht_senden">
+				<input type="hidden" name="reservierung_id" value="<?php echo esc_attr( $reservation_id ); ?>">
+				<?php wp_nonce_field( 'verwaltung_boote_nachricht_senden_' . $reservation_id ); ?>
+				<label for="verwaltung-boote-nachricht-text"><?php esc_html_e( 'Nachricht', 'verwaltung-boote' ); ?></label>
+				<textarea id="verwaltung-boote-nachricht-text" name="nachricht" rows="8" maxlength="5000" required></textarea>
+				<button type="submit"><?php esc_html_e( 'Nachricht senden', 'verwaltung-boote' ); ?></button>
+			</form>
+		</section>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Sendet eine Nachricht an das Mitglied einer Reservierung.
+	 *
+	 * @return void
+	 */
+	public function send_reservation_message() {
+		if ( ! is_user_logged_in() ) {
+			wp_die(
+				esc_html__( 'Du musst angemeldet sein, um eine Nachricht zu senden.', 'verwaltung-boote' ),
+				'',
+				array( 'response' => 403 )
+			);
+		}
+
+		$reservation_id = isset( $_POST['reservierung_id'] ) ? absint( wp_unslash( $_POST['reservierung_id'] ) ) : 0;
+		check_admin_referer( 'verwaltung_boote_nachricht_senden_' . $reservation_id );
+		$recipient = $this->get_reservation_recipient( $reservation_id );
+		$message   = isset( $_POST['nachricht'] ) ? sanitize_textarea_field( wp_unslash( $_POST['nachricht'] ) ) : '';
+		$message   = wp_html_excerpt( $message, 5000, '' );
+		$url       = $this->get_reservation_message_url( $reservation_id );
+
+		if ( ! $recipient || '' === trim( $message ) || ! $url ) {
+			wp_safe_redirect( $url ? add_query_arg( 'vb_nachricht', 'fehler', $url ) : home_url( '/' ) );
+			exit;
+		}
+
+		$sender  = wp_get_current_user();
+		$data    = $this->get_reservation_data( $reservation_id );
+		$subject = sprintf( __( 'Nachricht von %s zu deiner Bootsreservierung', 'verwaltung-boote' ), $sender->display_name );
+		$body    = sprintf(
+			/* translators: 1: Absender, 2: Boot, 3: Beginn, 4: Ende, 5: Reservierungsgrund, 6: Nachricht. */
+			__( "%1$s hat dir zu deiner Reservierung von %2$s (%3$s bis %4$s) folgende Nachricht geschrieben:\n\nGrund der Reservierung:\n%5$s\n\nNachricht:\n%6$s", 'verwaltung-boote' ),
+			$sender->display_name,
+			$data['boat'],
+			$data['start'],
+			$data['end'],
+			$data['reason'],
+			$message
+		);
+		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+		if ( is_email( $sender->user_email ) ) {
+			$headers[] = 'Reply-To: ' . sanitize_email( $sender->user_email );
+		}
+
+		$sent = wp_mail( $recipient->user_email, $subject, $body, $headers );
+		wp_safe_redirect( add_query_arg( 'vb_nachricht', $sent ? 'gesendet' : 'fehler', $url ) );
+		exit;
 	}
 
 	/**
@@ -2335,6 +2523,7 @@ final class Plugin {
 							<th scope="col"><?php esc_html_e( 'Boot', 'verwaltung-boote' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Start', 'verwaltung-boote' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Ende', 'verwaltung-boote' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Grund', 'verwaltung-boote' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Aktionen', 'verwaltung-boote' ); ?></th>
 						</tr></thead>
 						<tbody>
@@ -2344,6 +2533,7 @@ final class Plugin {
 								<th scope="row"><?php echo esc_html( $data['boat'] ); ?></th>
 								<td><?php $this->render_browser_datetime( $data['start_utc'] ); ?></td>
 								<td><?php $this->render_browser_datetime( $data['end_utc'] ); ?></td>
+								<td><?php echo nl2br( esc_html( $data['reason'] ) ); ?></td>
 								<td>
 									<?php if ( $data['can_start'] ) : ?>
 										<?php $this->render_reservation_start_form( $reservation->ID ); ?>
@@ -2395,7 +2585,7 @@ final class Plugin {
 				$start_utc = (string) get_post_meta( $reservation->ID, '_vb_reservierung_start', true );
 				$end_utc   = (string) get_post_meta( $reservation->ID, '_vb_reservierung_ende', true );
 				?>
-				<li><?php echo esc_html( $data['user'] ); ?>, <?php $this->render_browser_datetime( $start_utc, '–', 'time' ); ?>–<?php $this->render_browser_datetime( $end_utc, '–', 'time' ); ?></li>
+				<li><?php $this->render_reservation_user_link( $reservation->ID, $data['user'] ); ?>, <?php $this->render_browser_datetime( $start_utc, '–', 'time' ); ?>–<?php $this->render_browser_datetime( $end_utc, '–', 'time' ); ?>, <?php esc_html_e( 'Grund: ', 'verwaltung-boote' ); ?><?php echo nl2br( esc_html( $data['reason'] ) ); ?></li>
 			<?php endforeach; ?>
 			</ul>
 		</div>
@@ -2425,6 +2615,10 @@ final class Plugin {
 				<label>
 					<?php esc_html_e( 'Reservierung endet', 'verwaltung-boote' ); ?>
 					<input class="verwaltung-boote-reservierung-ende" type="datetime-local" name="reservierung_ende" value="<?php echo esc_attr( $end->format( 'Y-m-d\TH:i' ) ); ?>" required>
+				</label>
+				<label>
+					<?php esc_html_e( 'Grund für die Reservierung (optional)', 'verwaltung-boote' ); ?>
+					<textarea name="reservierung_grund" rows="3" maxlength="1000"></textarea>
 				</label>
 				<button type="submit"><?php esc_html_e( 'Reservierung speichern', 'verwaltung-boote' ); ?></button>
 			</form>
@@ -2830,6 +3024,32 @@ final class Plugin {
 	}
 
 	/**
+	 * Legt die Seite für Nachrichten an reservierende Mitglieder an.
+	 *
+	 * @return void
+	 */
+	public function ensure_message_page() {
+		$page = get_page_by_path( 'mitglied-nachricht-schreiben' );
+		if ( ! $page ) {
+			$page_id = wp_insert_post(
+				array(
+					'post_title'   => __( 'Nachricht an Mitglied schreiben', 'verwaltung-boote' ),
+					'post_name'    => 'mitglied-nachricht-schreiben',
+					'post_content' => '[verwaltung_boote_nachricht]',
+					'post_status'  => 'publish',
+					'post_type'    => 'page',
+				)
+			);
+			if ( ! is_wp_error( $page_id ) ) {
+				update_option( 'verwaltung_boote_message_page_id', $page_id );
+			}
+			return;
+		}
+
+		update_option( 'verwaltung_boote_message_page_id', $page->ID );
+	}
+
+	/**
 	 * Liefert die IDs der geschützten Bootswart-Seiten.
 	 *
 	 * @return array<string,int>
@@ -2939,6 +3159,7 @@ final class Plugin {
 
 		$plugin->ensure_bootswart_pages();
 		$plugin->ensure_qr_entry_page();
+		$plugin->ensure_message_page();
 
 		flush_rewrite_rules();
 	}
