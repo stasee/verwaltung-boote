@@ -2,7 +2,7 @@
 Contributors: website-administration
 Requires at least: 6.9
 Requires PHP: 7.2.24
-Stable tag: 1.5.3
+Stable tag: 1.5.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,6 +15,12 @@ Bootsdaten pflegen. Angemeldete Vereinsmitglieder sehen die Liste ueber den
 Shortcode [verwaltung_boote_liste].
 
 == Changelog ==
+
+= 1.5.5 =
+* Freitextfilter auf den Bootswart-Seiten „Alle Reservierungen“ und „Alle Bootsschäden“ ergänzt.
+
+= 1.5.4 =
+* Die Bootswart-Seite „Alle Nutzungen“ um einen Freitextfilter erweitert.
 
 = 1.5.3 =
 * Kompatibilitaet mit QR-Codes aus den Versionen 1.5.0 und 1.5.1 entfernt; QR-Codes werden ausschliesslich ueber die aktuelle Boots-ID aufgeloest.

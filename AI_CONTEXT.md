@@ -65,6 +65,7 @@ Die Seiten werden durch `ensure_bootswart_pages()` erstellt bzw. bei Updates erg
 - Bei Rückgabe einer reservierten Nutzung wird auch die zugehörige Reservierung als beendet markiert.
 - Stornierte oder vergangene Reservierungen werden nicht gelöscht.
 - Bootsschäden bleiben nach der Markierung als behoben gespeichert; offene Schäden stehen in der Bootswart-Liste zuerst.
+- Die Bootswart-Seiten „Alle Nutzungen“, „Alle Reservierungen“ und „Alle Bootsschäden“ enthalten jeweils einen browserseitigen Freitextfilter über alle sichtbaren Angaben eines Eintrags.
 - Beim Melden eines Schadens erhalten alle Benutzer mit der Rolle `bootswart` eine E-Mail. Sie enthält Boot, Typ, Liegeplatz, meldendes Mitglied, Zeitpunkt, Nutzungszeiten, Reservierungsbezug, Logbuchreferenz, Schwere und Beschreibung.
 - Zustandsverändernde Bootswart-Aktionen (Stornieren, Nutzung beenden, Schaden beheben) dürfen nur als `POST`-Anfragen mit Nonce und Berechtigungsprüfung umgesetzt werden.
 - Jedes Boot hat eine eindeutige, URL-taugliche und dauerhafte Boots-ID. Ihr Standardwert wird aus dem Bootsnamen ohne Leerzeichen oder Sonderzeichen gebildet und enthält nur Kleinbuchstaben und Ziffern, z. B. `H-Boot 1` → `hboot1`. Sie kann in der Bootsmaske gepflegt werden. Nach dem Drucken der QR-Codes darf sie nicht mehr geändert werden.
@@ -73,7 +74,7 @@ Die Seiten werden durch `ensure_bootswart_pages()` erstellt bzw. bei Updates erg
 
 ## Aktueller Stand
 
-Plugin-Version: **1.5.3**
+Plugin-Version: **1.5.5**
 
 Die Bootswart-Verwaltung wurde in eine Übersichtsseite mit fünf getrennten Verwaltungsseiten für Boote, Reservierungen, Nutzungen, Schäden und Nutzer aufgeteilt.
 
@@ -86,6 +87,8 @@ Die Bootswart-Seite „Alle Nutzer“ zeigt alle Personen mit mindestens einer B
 Die QR-Code-Druckseite für den Bootswart erzeugt Codes lokal im Browser und überträgt keine Daten an einen externen QR-Dienst.
 
 QR-Codes verwenden die dauerhafte Boots-ID statt der internen WordPress-Beitrags-ID.
+
+Die Listen „Alle Nutzungen“, „Alle Reservierungen“ und „Alle Bootsschäden“ lassen sich jeweils über ein Freitext-Suchfeld filtern.
 
 ## Plugin-Paket für andere WordPress-Installationen
 

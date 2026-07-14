@@ -79,3 +79,27 @@ document.querySelectorAll('.verwaltung-boote-qr-drucken').forEach(function (butt
 		window.print();
 	});
 });
+
+document.querySelectorAll('.verwaltung-boote-freitext-filter-eingabe').forEach(function (input) {
+	var tableBody = input.closest('section').querySelector('.verwaltung-boote-freitext-filter-tabelle');
+	var noResults = tableBody ? tableBody.querySelector('.verwaltung-boote-freitext-filter-kein-treffer') : null;
+
+	if (!tableBody || !noResults) {
+		return;
+	}
+
+	input.addEventListener('input', function () {
+		var searchTerm = input.value.trim().toLocaleLowerCase();
+		var visibleRows = 0;
+
+		tableBody.querySelectorAll('.verwaltung-boote-freitext-filter-zeile').forEach(function (row) {
+			var matches = row.textContent.toLocaleLowerCase().indexOf(searchTerm) !== -1;
+			row.hidden = !matches;
+			if (matches) {
+				visibleRows++;
+			}
+		});
+
+		noResults.hidden = 0 === searchTerm.length || visibleRows > 0;
+	});
+});
