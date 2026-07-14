@@ -74,7 +74,9 @@ Die Seiten werden durch `ensure_bootswart_pages()` erstellt bzw. bei Updates erg
 
 ## Aktueller Stand
 
-Plugin-Version: **1.7.1**
+Plugin-Version: **1.7.2**
+
+Sichtbare Reservierungslisten sind nach `_vb_reservierung_start` absteigend sortiert; die zeitlich neueste Reservierung steht oben.
 
 Reservierungen können einen optionalen Freitextgrund im Metafeld `_vb_reservierung_grund` enthalten. Der Text ist auf 100 Zeichen begrenzt und wird in allen Reservierungsansichten sowie im Bezug einer Mitgliedsnachricht angezeigt.
 

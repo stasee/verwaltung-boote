@@ -2,7 +2,7 @@
 Contributors: website-administration
 Requires at least: 6.9
 Requires PHP: 7.2.24
-Stable tag: 1.7.1
+Stable tag: 1.7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,6 +15,9 @@ Bootsdaten pflegen. Angemeldete Vereinsmitglieder sehen die Liste ueber den
 Shortcode [verwaltung_boote_liste].
 
 == Changelog ==
+
+= 1.7.2 =
+* Reservierungslisten nach Reservierungsbeginn absteigend sortiert.
 
 = 1.7.1 =
 * Reservierungsgrund im Formular und serverseitig auf 100 Zeichen begrenzt.

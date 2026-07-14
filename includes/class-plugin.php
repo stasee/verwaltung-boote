@@ -58,6 +58,7 @@ final class Plugin {
 		add_action( 'template_redirect', array( $this, 'protect_bootswart_page' ) );
 		add_filter( 'wp_get_nav_menu_items', array( $this, 'filter_bootswart_menu_item' ) );
 		add_action( 'pre_get_posts', array( $this, 'hide_bootswart_page' ) );
+		add_action( 'pre_get_posts', array( $this, 'sort_reservation_admin_list' ), 20 );
 		add_action( 'add_meta_boxes_vb_boot', array( $this, 'add_berth_meta_box' ) );
 		add_action( 'add_meta_boxes_vb_boot', array( $this, 'add_type_meta_box' ) );
 		add_action( 'add_meta_boxes_vb_boot', array( $this, 'add_boat_identifier_meta_box' ) );
@@ -520,6 +521,22 @@ final class Plugin {
 		$excluded   = (array) $query->get( 'post__not_in' );
 		$excluded   = array_merge( $excluded, $page_ids );
 		$query->set( 'post__not_in', array_unique( array_map( 'absint', $excluded ) ) );
+	}
+
+	/**
+	 * Sortiert die Reservierungsliste im WordPress-Backend nach Beginn absteigend.
+	 *
+	 * @param \WP_Query $query Aktuelle Abfrage.
+	 * @return void
+	 */
+	public function sort_reservation_admin_list( $query ) {
+		if ( ! is_admin() || ! $query->is_main_query() || 'vb_reservierung' !== $query->get( 'post_type' ) ) {
+			return;
+		}
+
+		$query->set( 'meta_key', '_vb_reservierung_start' );
+		$query->set( 'orderby', 'meta_value' );
+		$query->set( 'order', 'DESC' );
 	}
 
 	/**
@@ -1737,7 +1754,7 @@ final class Plugin {
 		}
 
 		if ( 'reservations' === $section ) {
-			$reservations = get_posts( array( 'post_type' => 'vb_reservierung', 'post_status' => 'publish', 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC' ) );
+			$reservations = get_posts( array( 'post_type' => 'vb_reservierung', 'post_status' => 'publish', 'posts_per_page' => -1, 'orderby' => 'meta_value', 'meta_key' => '_vb_reservierung_start', 'order' => 'DESC' ) );
 			?>
 			<section>
 				<h2><?php esc_html_e( 'Alle Reservierungen', 'verwaltung-boote' ); ?></h2>
@@ -1801,7 +1818,7 @@ final class Plugin {
 		wp_enqueue_script( 'verwaltung-boote-frontend', plugins_url( 'assets/js/frontend.js', VERWALTUNG_BOOTE_FILE ), array(), VERWALTUNG_BOOTE_VERSION, true );
 
 		$boats        = $this->sort_boats_by_type( get_posts( array( 'post_type' => 'vb_boot', 'post_status' => 'publish', 'posts_per_page' => -1 ) ) );
-		$reservations = get_posts( array( 'post_type' => 'vb_reservierung', 'post_status' => 'publish', 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC' ) );
+		$reservations = get_posts( array( 'post_type' => 'vb_reservierung', 'post_status' => 'publish', 'posts_per_page' => -1, 'orderby' => 'meta_value', 'meta_key' => '_vb_reservierung_start', 'order' => 'DESC' ) );
 		$logs         = get_posts( array( 'post_type' => 'vb_logbuch', 'post_status' => 'publish', 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC' ) );
 		$damages      = get_posts( array( 'post_type' => 'vb_schaden', 'post_status' => 'publish', 'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC' ) );
 		usort(
@@ -2169,7 +2186,7 @@ final class Plugin {
 				'posts_per_page' => -1,
 				'orderby'        => 'meta_value',
 				'meta_key'       => '_vb_reservierung_start',
-				'order'          => 'ASC',
+				'order'          => 'DESC',
 				'meta_query'     => array(
 					'relation' => 'AND',
 					array( 'key' => '_vb_boot_id', 'value' => $boat_id, 'type' => 'NUMERIC' ),
@@ -2215,7 +2232,7 @@ final class Plugin {
 				'posts_per_page' => -1,
 				'orderby'        => 'meta_value',
 				'meta_key'       => '_vb_reservierung_start',
-				'order'          => 'ASC',
+				'order'          => 'DESC',
 				'meta_query'     => array(
 					'relation' => 'AND',
 					array( 'key' => '_vb_user_id', 'value' => absint( $user_id ), 'type' => 'NUMERIC' ),
