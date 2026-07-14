@@ -1,5 +1,5 @@
 === Verwaltung Boote ===
-Contributors: website-administration
+Contributors: stasee
 Requires at least: 6.9
 Requires PHP: 7.2.24
 Stable tag: 1.7.2

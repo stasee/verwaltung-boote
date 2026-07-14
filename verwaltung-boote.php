@@ -5,7 +5,7 @@
  * Version:           1.7.2
  * Requires at least: 6.9
  * Requires PHP:      7.2.24
- * Author:            Website-Administration
+ * Author:            stasee
  * Text Domain:       verwaltung-boote
  * Domain Path:       /languages
  *
