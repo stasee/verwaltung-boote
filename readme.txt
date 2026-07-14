@@ -3,8 +3,7 @@ Contributors: website-administration
 Requires at least: 6.9
 Requires PHP: 7.2.24
 Stable tag: 1.7.2
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: MIT License
 
 Verwaltung von Motor- und Segelbooten fuer einen Segelverein.
 
